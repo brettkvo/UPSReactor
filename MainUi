@@ -1,0 +1,152 @@
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
+import requests
+from PIL import ImageTk, ImageTk
+import pytesseract
+import cv2
+
+#heigh and width of app
+HEIGHT = 500
+WIDTH = 800
+cameraw, camerah = 1920, 1080 #controls camera dimmensions on camera section
+
+#getting camerea input, right now is broken and makes app take forever to open
+
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, cameraw)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, camerah)
+
+#Gas Control Function that right now only takes a number and is able to send it somewhere, maybe later wil just be a toggle to turn on
+#gas and off.
+def GasControl():
+    #increments the current value by 1
+    def add1():
+        value = float(gas_entry.get())
+        value += 1
+        gas_entry.delete(0, 'end')
+        gas_entry.insert(0, value)
+    def sub1():
+        value = float(gas_entry.get())
+        value -= 1
+        gas_entry.delete(0, 'end')
+        gas_entry.insert(0, value)
+#Reaction control Section UI, opens seperately when reactor button is clicked on main ui
+    control = tk.Toplevel()
+    control.title('System Control')
+    canvas2 = tk.Canvas(control, height = HEIGHT, width = WIDTH)
+    canvas2.pack()
+    #sets background of reactor control ui to this image
+    background_image = tk.PhotoImage(file = "gradiant.png")
+    background_label = tk.Label(control, image = background_image)
+    background_label.place(relwidth = 1, relheight = 1)
+    #creates the lower frame, where all the inputs are
+    lower_frame = tk.Frame(control, bg = "#8A9394", bd = 10)
+    lower_frame.place(relx = 0.5, rely = 0.25, relwidth = .75, relheight = .6, anchor = 'n')
+#This is a the gas control input start
+    label = tk.Label(lower_frame, text = "Gas Valve Control", font = 40)
+    label.pack()
+    #this creates the text box where the user inputs a number if they dont want to use button
+    gas_entry = tk.Entry(lower_frame, width = '30' ,font=('calibre',10,'normal'))
+    gas_entry.insert(0, 1)
+    gas_entry.place(relx = 0.5, rely = 0.1, anchor = 'n')
+
+    #this is the send button, once we have gas control enabled and integrated, can tie it to afunction
+    gas_button1 = tk.Button(lower_frame, text = 'Send')
+    gas_button1.place(relx = 0.8, rely = 0.1, anchor = 'n')
+    #This button links toa the add1function which increments the number in the text box by 1
+    gas_button2 = tk.Button(lower_frame, text = '>>', command=add1)
+    gas_button2.place(relx = 0.75, rely = 0.1, anchor = 'n')
+    #This button links toa the add1function which decrements the number in the text box by 1
+    gas_button2 = tk.Button(lower_frame, text = '<<', command=sub1)
+    gas_button2.place(relx = 0.25, rely = 0.1, anchor = 'n')
+
+    f = tk.Frame(control, bg = "#80c1ff", bd = 5)
+    f.place(relx = 0.5, rely = 0.1, relwidth = .75, relheight = .1, anchor = 'n')
+#this is the vacum control input start
+    vacuum_control = tk.Label(lower_frame, text = "Vacuum Control", font = 40)
+    vacuum_control.place(relx = 0.4, rely = 0.2)
+
+    vacuum_e = tk.Entry(lower_frame, width = '30' ,font=('calibre',10,'normal'))
+    vacuum_e.insert(0, 1)
+    vacuum_e.place(relx = 0.5, rely = 0.3, anchor = 'n')
+#This is just turns on the vacuum, but as of now button click does nothing
+    vac_but = tk.Button(lower_frame, text = 'Turn On')
+    vac_but.place(relx = 0.8, rely = 0.3, anchor = 'n')
+
+    control.mainloop()
+
+#this right now links to a text file and inputs that data on each line onto a graph in real time, and updates it
+def open_Graph():
+    style.use('fivethirtyeight')
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(1,1,1)
+
+    def animate(i):
+        graph_data = open('example.txt','r').read()
+        lines = graph_data.split('\n')
+        xs = []
+        ys = []
+        for line in lines:
+            if len(line) > 1:
+                x, y = line.split(',')
+                xs.append(float(x))
+                ys.append(float(y))
+        ax1.clear()
+        ax1.set_title("Temperature vs Time")
+        ax1.set_ylabel("Temperature (°F)")
+        ax1.set_xlabel("Time (Seconds)")
+        ax1.plot(xs, ys)
+        plt.tight_layout()
+
+    ani = animation.FuncAnimation(fig, animate, interval=1000)
+    plt.show()
+
+##########################################################################
+#Start of homepage UI
+root = tk.Tk()
+root.geometry("+500+300") ##where on your screen this file will open, right now its supposedly centered
+root.title('Reactor Control') #what apepars at the top of the ui window, basically a label for what page ur on
+
+canvas = tk.Canvas(root, height = HEIGHT, width = WIDTH)
+canvas.pack()
+
+#background image for main ui homepage
+background_image = tk.PhotoImage(file = "landscape.png")
+background_label = tk.Label(root, image = background_image)
+background_label.place(relwidth = 1, relheight = 1)
+
+frame = tk.Frame(root, bg = "#80c1ff", bd = 5)
+frame.place(relx = 0.5, rely = 0.1, relwidth = .75, relheight = .1, anchor = 'n')
+
+#entry = tk.Entry(frame, font = 40)
+#entry.place(relwidth = 0.65, relheight = 1)
+
+lower_frame = tk.Frame(root, bg = "#80c1ff", bd = 10)
+lower_frame.place(relx = 0.5, rely = 0.25, relwidth = .75, relheight = .6, anchor = 'n')
+
+label = tk.Label(lower_frame, font = ('Georgia', 18))
+label.place(relwidth = 1, relheight = 1)
+
+##lower frame buttons
+graph_button = tk.Button(lower_frame, text = "Temperature Monitor", font = 40, bg = "#54B87E", command = lambda: open_Graph())
+graph_button.place(relx = 0, relwidth = 0.3, relheight = .25) #when temperature monitor is clicked, opens the temperature graph
+
+r_control = tk.Button(lower_frame, text = "Reactor Control", font = 40, bg = "#A74747", command = lambda: GasControl())
+r_control.place(relx = .3, relwidth = 0.3, relheight = 0.25) #when reactor control is clicked, opens the new Window in Gas Control
+
+power_graph = tk.Button(lower_frame, text = "Power Monitor", font = 40, bg = "#F1F016")
+power_graph.place(relx = 0.6, relwidth = 0.3, relheight = 0.25)
+#Opens the camera control part
+camera = tk.Button(lower_frame, text = "Camera View", font = 40, bg = "#BF3B59", command = lambda: CameraCon())
+camera.place(relx = 0, rely = 0.25, relwidth = 0.3, relheight = 0.25)
+
+p_quit = tk.Button(lower_frame, text = "Exit Program", font = 40, bg = "#1CDB21", command = lambda:sys.exit(1))
+p_quit.place(relx = 0.7, rely  = .85, relwidth = 0.3, relheight = 0.15)
+
+
+root.mainloop()
